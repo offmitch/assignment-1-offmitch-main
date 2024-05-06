@@ -253,7 +253,7 @@ app.get('/member', (req, res) => {
     var html = `
     <h1>You are now one of our elite members ${req.session.username}!</h1>
     
-    <img src='/images/member1.jpg' style='width:300px;'>
+    <img src='/member1.jpg' style='width:300px;'>
     <br>
     <button><a href='/logout' style='text-decoration:none'>Logout</a></button> 
     `;
