@@ -187,42 +187,6 @@ app.post('/submitUser', async (req,res) => {
     res.redirect('/home');
 });
 
-// app.post('/loggingin', async (req,res) => {
-//     var email = req.body.email;
-//     var password = req.body.password;
-
-// 	const schema = Joi.string().email().required();
-// 	const validationResult = schema.validate(email);
-// 	if (validationResult.error != null) {
-// 	   console.log(validationResult.error);
-//        req.session.errorMessage = 'Invalid Password';
-// 	   res.redirect("/");
-// 	   return;
-// 	}
-
-// 	const result = await userCollection.find({email: email}).project({username: 1, password: 1, _id: 1}).toArray();
-
-// 	console.log(result);
-// 	if (result.length != 1) {
-// 		console.log("user not found");
-// 		res.redirect("/");
-// 		return;
-// 	}
-// 	if (await bcrypt.compare(password, result[0].password)) {
-// 		console.log("correct password");
-// 		req.session.authenticated = true;
-// 		req.session.username = username;
-// 		req.session.cookie.maxAge = expireTime;
-
-// 		res.redirect('/loggedIn');
-// 		return;
-// 	}
-// 	else {
-// 		console.log("incorrect password");
-// 		res.redirect("/");
-// 		return;
-// 	}
-// });
 
 app.post('/loggingin', async (req, res) => {
     var email = req.body.email; 
@@ -269,6 +233,9 @@ app.get('/home', (req,res) => {
     }
     var html = `
     You are logged in!
+    <br>
+    <button><a href='/member' style='text-decoration:none'>Members Area</a></button>
+    <button><a href='/logout' style='text-decoration:none'>Logout</a></button>
     `;
     res.send(html);
 });
@@ -283,7 +250,12 @@ app.get('/logout', (req,res) => {
 
 app.use(express.static(__dirname + "/public"));
 
-
+app.get('/member', (req,res) => {
+    var html = `
+<h1>You are now one of our elite members!</h1>
+    `;
+    res.send(html);
+});
 
 app.get("*", (req,res) => {
 	res.status(404);
