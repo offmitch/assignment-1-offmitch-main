@@ -248,14 +248,20 @@ app.get('/logout', (req,res) => {
     res.send(html);
 });
 
-app.use(express.static(__dirname + "/public"));
-
-app.get('/member', (req,res) => {
+app.get('/member', (req, res) => {
+    // HTML code with an image tag for the logout button
     var html = `
-<h1>You are now one of our elite members!</h1>
+    <h1>You are now one of our elite members ${req.session.username}!</h1>
+    
+    <img src='/images/member1.jpg' style='width:300px;'>
+    <br>
+    <button><a href='/logout' style='text-decoration:none'>Logout</a></button> 
     `;
     res.send(html);
 });
+
+app.use(express.static(__dirname + "/public"));
+
 
 app.get("*", (req,res) => {
 	res.status(404);
