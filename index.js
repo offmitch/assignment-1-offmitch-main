@@ -145,7 +145,7 @@ app.get('/createUser', (req,res) => {
     <input name='username' type='text' placeholder='username'>
     <input name='email' type='text' placeholder='email'>
     <input name='password' type='password' placeholder='password'>
-    <button>Submit</button>
+    <button><a href='/submitUser' style='text-decoration:none'>Submit</a></button>
     </form>
     `;
     res.send(html);
