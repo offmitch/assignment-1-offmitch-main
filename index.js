@@ -185,7 +185,6 @@ app.post('/submitUser', async (req,res) => {
     var html = `successfully created user `;
     res.send(html);
 
-    res.redirect('/home');
 });
 
 
