@@ -182,7 +182,9 @@ app.post('/submitUser', async (req,res) => {
     req.session.username = username;
     req.session.cookiemaxAge = expireTime;
 
-    var html = `successfully created user `;
+    var html = `successfully created user 
+    <button><a href='/home' style='text-decoration:none'>Home Page</a></button>
+    `;
     res.send(html);
 
 });
