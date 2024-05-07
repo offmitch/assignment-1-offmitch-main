@@ -181,7 +181,7 @@ app.post('/submitUser', async (req,res) => {
     req.session.username = username;
     req.session.cookiemaxAge = expireTime;
 
-    var html = "successfully created user";
+    var html = `successfully created user `;
     res.send(html);
 
     res.redirect('/home');
@@ -244,28 +244,53 @@ app.get('/logout', (req,res) => {
 	req.session.destroy();
     var html = `
     You are logged out.
+    <br>
+    <button><a href='/home' style='text-decoration:none'>Home Page</a></button> 
     `;
     res.send(html);
 });
 
 app.get('/member', (req, res) => {
-    // HTML code with an image tag for the logout button
-    var html = `
-    <h1>You are now one of our elite members ${req.session.username}!</h1>
     
-    <img src='/member1.jpg' style='width:300px;'>
-    <br>
-    <button><a href='/logout' style='text-decoration:none'>Logout</a></button> 
+    const randomNumber = Math.floor(Math.random() * 4);
+
+    if (req.session.pageHits){
+        req.session.pageHits = randomNumber;
+    }else {
+        req.session.pageHits = 1;
+    }
+
+    let pageHits = req.session.pageHits;
+
+    let imageUrl;
+    if (pageHits === 0) {
+        imageUrl = '/member1.jpg';
+    } else if (pageHits === 1) {
+        imageUrl = '/member2.jpg';
+    } else if (pageHits === 2) {
+        imageUrl = '/member3.jpg';
+    } else if (pageHits === 3) {
+        imageUrl = '/member4.jpg';
+    } else {
+        imageUrl = '/member1.jpg';
+    }
+
+    const html = `
+        <h1>You are now one of our elite members ${req.session.username}!</h1>
+        <img src='${imageUrl}' style='width:300px;'>
+        <br>
+        <button><a href='/logout' style='text-decoration:none'>Logout</a></button>
     `;
     res.send(html);
 });
+
 
 app.use(express.static(__dirname + "/public"));
 
 
 app.get("*", (req,res) => {
 	res.status(404);
-	res.send("Page not found - 404");
+	res.send(`404 page not found`);
 })
 
 app.listen(port, () => {
