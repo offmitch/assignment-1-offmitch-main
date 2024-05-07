@@ -47,6 +47,7 @@ app.use(session({
 ));
 
 app.get('/', (req,res) => {
+    
     const html = `
     <h1> Login/Register </h1>
     <button><a href='/login' style='text-decoration:none'>Login</a></button>
@@ -252,6 +253,10 @@ app.get('/logout', (req,res) => {
 
 app.get('/member', (req, res) => {
     
+    if (!req.session.authenticated) {
+        res.redirect('/');
+    }
+
     const randomNumber = Math.floor(Math.random() * 4);
 
     if (req.session.pageHits){
@@ -290,7 +295,7 @@ app.use(express.static(__dirname + "/public"));
 
 app.get("*", (req,res) => {
 	res.status(404);
-	res.send(`404 page not found`);
+	res.send(`<h1>404 page not found:(</h1>`);
 })
 
 app.listen(port, () => {
