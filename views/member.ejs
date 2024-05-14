@@ -1,0 +1,17 @@
+<%- include("templates/header") %> 
+<h1>You are one of our elite members <%= username %>!</h1>
+<img src='<%= imageURL %>' style='width:300px;'>
+<button><a href='/logout' style='text-decoration:none'>Logout</a></button>
+<%- include("templates/footer") %> 
+
+<% if (pageHits === 0) { %>
+    <img src='/member1.jpg' style='width:250px;'>
+    <% } else if (pageHits === 1) { %>
+     <img src='/member2.jpg' style='width:250px;'>
+     <% } else if (pageHits === 2) {%>
+    <img src='/member3.jpg' style='width:250px;'>
+     <% } else if (pageHits === 3) {%>
+     <img src='/member4.jpg' style='width:250px;'>
+         <% } else {%>
+     <img src='/member1.jpg' style='width:250px;'>
+         <% } %>

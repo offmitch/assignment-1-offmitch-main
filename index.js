@@ -29,6 +29,8 @@ var {database} = include('databaseConnection');
 
 const userCollection = database.db(mongodb_database).collection('users');
 
+app.set('view engine', 'ejs');
+
 app.use(express.urlencoded({extended: false}));
 
 var mongoStore = MongoStore.create({
@@ -46,30 +48,52 @@ app.use(session({
 }
 ));
 
-app.get('/', (req,res) => {
-    
-    const html = `
-    <h1> Login/Register </h1>
-    <button><a href='/login' style='text-decoration:none'>Login</a></button>
-    <button><a href='/createUser' style='text-decoration:none'>Register</a></button>
-    `;
+function isValidSession(req) {
+    if (req.session.authenticated) {
+        return true;
+    }
+    return false;
+}
 
-    res.send(html);
-});
+function sessionValidation(req,res,next) {
+    if (isValidSession(req)) {
+        next();
+    }
+    else {
+        res.redirect('/login');
+    }
+}
+
+
+function isAdmin(req) {
+    if (req.session.user_type == 'admin') {
+        return true;
+    }
+    return false;
+}
+
+function adminAuthorization(req, res, next) {
+    if (!isAdmin(req)) {
+        res.status(403);
+        res.render("errorMessage", {error: "Not Authorized"});
+        return;
+    }
+    else {
+        next();
+    }
+}
+
+
+app.get('/', (req,res)=> {
+    res.render("index");
+})
+
+
 
 app.get('/login', (req,res) => {
     var errorMessage = req.session.errorMessage || '';
     req.session.errorMessage = '';
-    var html = `
-    <h1>Please login or register</h1>
-    <form action='/loggingin' method='post'>
-    <input name='email' type='text' placeholder='email'>
-    <input name='password' type='password' placeholder='password'>
-    <button>Submit</button>
-    </form>
-    ${errorMessage}
-    `;
-    res.send(html);
+    res.render("login", {errorMessage: errorMessage});
 });
 
 function requireAuth(req, res, next){
@@ -114,17 +138,7 @@ app.get('/nosql-injection', async (req,res) => {
 
 app.get('/contact', (req,res) => {
     var missingEmail = req.query.missing;
-    var html = `
-        email address:
-        <form action='/submitEmail' method='post'>
-            <input name='email' type='text' placeholder='email'>
-            <button>Submit</button>
-        </form>
-    `;
-    if (missingEmail) {
-        html += "<br> email is required";
-    }
-    res.send(html);
+   res.render("contact", {missing: missingEmail});
 });
 
 app.post('/submitEmail', (req,res) => {
@@ -139,19 +153,8 @@ app.post('/submitEmail', (req,res) => {
 
 
 app.get('/createUser', (req,res) => {
-    var html = `
-    Create User Here
-    <form action='/submitUser' method='post'>
-    <input name='username' type='text' placeholder='username'>
-    <input name='email' type='text' placeholder='email'>
-    <input name='password' type='password' placeholder='password'>
-    <button type='submit'>Submit</button>
-    </form>
-    `;
-    res.send(html);
+ res.render("createUser");
 });
-
-
 
 
 app.post('/submitUser', async (req,res) => {
@@ -175,17 +178,14 @@ app.post('/submitUser', async (req,res) => {
 
     var hashedPassword = await bcrypt.hash(password, saltRounds);
 	
-	await userCollection.insertOne({email: email, username: username, password: hashedPassword});
+	await userCollection.insertOne({email: email, username: username, password: hashedPassword, user_type: "user"});
 	console.log("Inserted user");
 
     req.session.authenticated = true;
     req.session.username = username;
     req.session.cookiemaxAge = expireTime;
 
-    var html = `successfully created user 
-    <button><a href='/home' style='text-decoration:none'>Home Page</a></button>
-    `;
-    res.send(html);
+    res.render("submitUser");
 
 });
 
@@ -207,18 +207,28 @@ app.post('/loggingin', async (req, res) => {
         res.redirect("/login");
         return;
     }
+    const result = await userCollection.find({email: email}).project({username: 1, password: 1, user_type: 1, _id: 1}).toArray();
 
-    const result = await userCollection.findOne({ email });
+    // const result = await userCollection.findOne({ email });
+
+    console.log(result);
+
+    if (result.length != 1) {
+		console.log("user not found");
+		res.redirect("/login");
+		return;
+	}
 
     if (!result) {
         req.session.errorMessage = 'Invalid email or password';
-        res.redirect("/login");
+        res.redirect("/");
         return;
     }
 
-    if (await bcrypt.compare(password, result.password)) {
+    if (await bcrypt.compare(password, result[0].password)) {
+        console.log("correct password");
         req.session.authenticated = true;
-        req.session.username = result.username;
+        req.session.user_type = result[0].user_type;
         req.session.cookie.maxAge = expireTime;
 
         res.redirect('/home');
@@ -228,28 +238,18 @@ app.post('/loggingin', async (req, res) => {
     }
 });
 
-
+app.use('/home', sessionValidation);
 app.get('/home', (req,res) => {
     if (!req.session.authenticated) {
-        res.redirect('/');
+        res.redirect('/login');
     }
-    var html = `
-    You are logged in!
-    <br>
-    <button><a href='/member' style='text-decoration:none'>Members Area</a></button>
-    <button><a href='/logout' style='text-decoration:none'>Logout</a></button>
-    `;
-    res.send(html);
+
+    res.render("home");
 });
 
 app.get('/logout', (req,res) => {
 	req.session.destroy();
-    var html = `
-    You are logged out.
-    <br>
-    <button><a href='/home' style='text-decoration:none'>Home Page</a></button> 
-    `;
-    res.send(html);
+    res.render("logout");
 });
 
 app.get('/member', (req, res) => {
@@ -269,25 +269,17 @@ app.get('/member', (req, res) => {
     let pageHits = req.session.pageHits;
 
     let imageUrl;
-    if (pageHits === 0) {
-        imageUrl = '/member1.jpg';
-    } else if (pageHits === 1) {
-        imageUrl = '/member2.jpg';
-    } else if (pageHits === 2) {
-        imageUrl = '/member3.jpg';
-    } else if (pageHits === 3) {
-        imageUrl = '/member4.jpg';
-    } else {
-        imageUrl = '/member1.jpg';
-    }
 
-    const html = `
-        <h1>You are now one of our elite members ${req.session.username}!</h1>
-        <img src='${imageUrl}' style='width:300px;'>
-        <br>
-        <button><a href='/logout' style='text-decoration:none'>Logout</a></button>
-    `;
-    res.send(html);
+    var username = req.session.username;
+
+
+    res.render("member", {imageURL: imageUrl , pageHits: pageHits, username: username});
+});
+
+app.get('/admin', sessionValidation, adminAuthorization, async (req,res) => {
+    const result = await userCollection.find().project({username: 1, _id: 1}).toArray();
+ 
+    res.render("admin", {users: result});
 });
 
 
@@ -296,7 +288,7 @@ app.use(express.static(__dirname + "/public"));
 
 app.get("*", (req,res) => {
 	res.status(404);
-	res.send(`<h1>404 page not found:(</h1>`);
+	res.render("404");
 })
 
 app.listen(port, () => {
